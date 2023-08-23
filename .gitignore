@@ -1,0 +1,33 @@
+# Binaries, executables and libraries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.out
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Dependency directories (vendor/)
+vendor/
+
+# IDEs and editors
+/.idea
+*.swp
+*.*~
+*.iml
+
+# OS-specific ignores
+.DS_Store
+Thumbs.db
+This .gitignore file excludes binaries, some artifacts from various tools, specific files related to some IDEs and text editors, and some operating system-specific files. It's a decent starting point, but you might need to customize it based on the tools and libraries you are using in your specific project.
+
+
+
+bin/
+
+

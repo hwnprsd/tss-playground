@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+option go_package = "./proto";
+
+service Node {
+	rpc Handshake(Version) returns (Version);
+}
+
+message Version {
+	string version = 1;
+	string listenAddr = 2;
+	repeated string peerList = 3;
+}
