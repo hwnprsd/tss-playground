@@ -4,10 +4,27 @@ option go_package = "./proto";
 
 service Node {
 	rpc Handshake(Version) returns (Version);
+	rpc Update(Version) returns (Ack);
+	rpc StartDKG(Caller) returns (Ack);
+}
+
+message Ack {}
+
+message Caller {} 
+
+message PartyId {
+	string id = 1;
+        string moniker = 2;
+        bytes key = 3;
 }
 
 message Version {
 	string version = 1;
 	string listenAddr = 2;
 	repeated string peerList = 3;
+	bool isInitialized = 4;
+	PartyId partyId = 5;
 }
+
+
+

@@ -20,6 +20,8 @@ const _ = grpc.SupportPackageIsVersion7
 
 const (
 	Node_Handshake_FullMethodName = "/Node/Handshake"
+	Node_Update_FullMethodName    = "/Node/Update"
+	Node_StartDKG_FullMethodName  = "/Node/StartDKG"
 )
 
 // NodeClient is the client API for Node service.
@@ -27,6 +29,8 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type NodeClient interface {
 	Handshake(ctx context.Context, in *Version, opts ...grpc.CallOption) (*Version, error)
+	Update(ctx context.Context, in *Version, opts ...grpc.CallOption) (*Ack, error)
+	StartDKG(ctx context.Context, in *Caller, opts ...grpc.CallOption) (*Ack, error)
 }
 
 type nodeClient struct {
@@ -46,11 +50,31 @@ func (c *nodeClient) Handshake(ctx context.Context, in *Version, opts ...grpc.Ca
 	return out, nil
 }
 
+func (c *nodeClient) Update(ctx context.Context, in *Version, opts ...grpc.CallOption) (*Ack, error) {
+	out := new(Ack)
+	err := c.cc.Invoke(ctx, Node_Update_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *nodeClient) StartDKG(ctx context.Context, in *Caller, opts ...grpc.CallOption) (*Ack, error) {
+	out := new(Ack)
+	err := c.cc.Invoke(ctx, Node_StartDKG_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // NodeServer is the server API for Node service.
 // All implementations must embed UnimplementedNodeServer
 // for forward compatibility
 type NodeServer interface {
 	Handshake(context.Context, *Version) (*Version, error)
+	Update(context.Context, *Version) (*Ack, error)
+	StartDKG(context.Context, *Caller) (*Ack, error)
 	mustEmbedUnimplementedNodeServer()
 }
 
@@ -60,6 +84,12 @@ type UnimplementedNodeServer struct {
 
 func (UnimplementedNodeServer) Handshake(context.Context, *Version) (*Version, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Handshake not implemented")
+}
+func (UnimplementedNodeServer) Update(context.Context, *Version) (*Ack, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Update not implemented")
+}
+func (UnimplementedNodeServer) StartDKG(context.Context, *Caller) (*Ack, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StartDKG not implemented")
 }
 func (UnimplementedNodeServer) mustEmbedUnimplementedNodeServer() {}
 
@@ -92,6 +122,42 @@ func _Node_Handshake_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Node_Update_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Version)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NodeServer).Update(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Node_Update_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NodeServer).Update(ctx, req.(*Version))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Node_StartDKG_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Caller)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NodeServer).StartDKG(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Node_StartDKG_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NodeServer).StartDKG(ctx, req.(*Caller))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Node_ServiceDesc is the grpc.ServiceDesc for Node service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -102,6 +168,14 @@ var Node_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Handshake",
 			Handler:    _Node_Handshake_Handler,
+		},
+		{
+			MethodName: "Update",
+			Handler:    _Node_Update_Handler,
+		},
+		{
+			MethodName: "StartDKG",
+			Handler:    _Node_StartDKG_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
