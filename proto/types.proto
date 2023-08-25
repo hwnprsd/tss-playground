@@ -6,6 +6,7 @@ service Node {
 	rpc Handshake(Version) returns (Version);
 	rpc Update(Version) returns (Ack);
 	rpc StartDKG(Caller) returns (Ack);
+	rpc DKGMessage(DKGData) returns (Ack);
 }
 
 message Ack {}
@@ -16,6 +17,16 @@ message PartyId {
 	string id = 1;
         string moniker = 2;
         bytes key = 3;
+	int32 index = 4;
+}
+
+
+message DKGData {
+	bytes wireMessage = 1;
+	PartyId partyId = 2;
+	int32 messageId = 3;
+	string type = 4;
+	bool isBroadcast = 5;
 }
 
 message Version {

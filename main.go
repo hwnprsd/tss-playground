@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"time"
 
 	"github.com/hwnprsd/tss/node"
@@ -12,23 +13,33 @@ import (
 // 3. Spin up random clients & communicate
 
 func main() {
-	go makeAndConnectNode(":3456", []string{})
-	time.Sleep(time.Second)
-	go makeAndConnectNode(":3457", []string{":3456"})
-	time.Sleep(time.Second * 2)
-	go makeAndConnectNode(":3458", []string{":3456"})
+	go makeAndConnectNode(":3456", []string{}, true)
+	go makeAndConnectNode(":3457", []string{":3456"}, false)
+	go makeAndConnectNode(":3458", []string{":3456"}, false)
 	select {}
 }
 
-func makeAndConnectNode(listenAddr string, knownAddresses []string) *node.Node {
+func makeAndConnectNode(listenAddr string, knownAddresses []string, dkg bool) *node.Node {
 	n := node.NewNode()
 	go n.Start(listenAddr, knownAddresses)
-	go func() {
-		for {
-			time.Sleep(time.Second * 5)
-			n.LogVersion()
-			n.LogPeers()
-		}
-	}()
+	// go func() {
+	// 	for {
+	// 		time.Sleep(time.Second * 5)
+	// 		// n.LogVersion()
+	// 		// n.LogPeers()
+	// 	}
+	// }()
+	if dkg {
+		go func() {
+			for {
+				time.Sleep(time.Second * 5)
+				if n.PeerCount() == 2 {
+					log.Println("\n\nCalling DKG")
+					n.InitKeygen()
+					break
+				}
+			}
+		}()
+	}
 	return n
 }

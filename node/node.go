@@ -6,6 +6,8 @@ import (
 	"net"
 	"sync"
 
+	"github.com/bnb-chain/tss-lib/ecdsa/keygen"
+	"github.com/bnb-chain/tss-lib/tss"
 	"github.com/hwnprsd/tss/crypto"
 	"github.com/hwnprsd/tss/proto"
 	"go.uber.org/zap"
@@ -23,8 +25,9 @@ type Node struct {
 
 	logger *zap.Logger
 
-	peerLock sync.RWMutex
-	peers    map[string]*PeerData
+	peerLock    sync.RWMutex
+	messageLock sync.RWMutex
+	peers       map[string]*PeerData
 
 	version       string
 	listenAddress string
@@ -34,7 +37,17 @@ type Node struct {
 	privateKey crypto.PrivateKey
 	partyId    *proto.PartyId
 
+	kgParty *tss.Party
+	kgData  *keygen.LocalPartySaveData
+
+	sigParty *tss.Party
+
+	// TODO: Redundant, but pid stores sorted index
+	pid *tss.PartyID
+
 	// TSS PreParams takes time to generate
+	// Not sure if this is needed in the nodes's state
+	preParams     *keygen.LocalPreParams
 	isParamsReady bool
 }
 
@@ -65,9 +78,10 @@ func (n *Node) Start(listenAddr string, knownAddresses []string) {
 	n.listenAddress = listenAddr
 
 	proto.RegisterNodeServer(grpcServer, n)
+	// This should be done in real time
+	n.SetupForTss()
+	n.GeneratePreParams()
 	go func() {
-		// only connect to nodes after setting up TSS requirements
-		n.SetupForTss()
 		n.ConnectToNodes(knownAddresses)
 	}()
 	n.logger.Info(fmt.Sprintf("New node started (%s)", listenAddr))
