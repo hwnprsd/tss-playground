@@ -19,10 +19,10 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Node_Handshake_FullMethodName  = "/Node/Handshake"
-	Node_Update_FullMethodName     = "/Node/Update"
-	Node_StartDKG_FullMethodName   = "/Node/StartDKG"
-	Node_DKGMessage_FullMethodName = "/Node/DKGMessage"
+	Node_Handshake_FullMethodName        = "/Node/Handshake"
+	Node_Update_FullMethodName           = "/Node/Update"
+	Node_StartDKG_FullMethodName         = "/Node/StartDKG"
+	Node_HandleTSSMessage_FullMethodName = "/Node/HandleTSSMessage"
 )
 
 // NodeClient is the client API for Node service.
@@ -32,7 +32,7 @@ type NodeClient interface {
 	Handshake(ctx context.Context, in *Version, opts ...grpc.CallOption) (*Version, error)
 	Update(ctx context.Context, in *Version, opts ...grpc.CallOption) (*Ack, error)
 	StartDKG(ctx context.Context, in *Caller, opts ...grpc.CallOption) (*Ack, error)
-	DKGMessage(ctx context.Context, in *DKGData, opts ...grpc.CallOption) (*Ack, error)
+	HandleTSSMessage(ctx context.Context, in *TSSData, opts ...grpc.CallOption) (*Ack, error)
 }
 
 type nodeClient struct {
@@ -70,9 +70,9 @@ func (c *nodeClient) StartDKG(ctx context.Context, in *Caller, opts ...grpc.Call
 	return out, nil
 }
 
-func (c *nodeClient) DKGMessage(ctx context.Context, in *DKGData, opts ...grpc.CallOption) (*Ack, error) {
+func (c *nodeClient) HandleTSSMessage(ctx context.Context, in *TSSData, opts ...grpc.CallOption) (*Ack, error) {
 	out := new(Ack)
-	err := c.cc.Invoke(ctx, Node_DKGMessage_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Node_HandleTSSMessage_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +86,7 @@ type NodeServer interface {
 	Handshake(context.Context, *Version) (*Version, error)
 	Update(context.Context, *Version) (*Ack, error)
 	StartDKG(context.Context, *Caller) (*Ack, error)
-	DKGMessage(context.Context, *DKGData) (*Ack, error)
+	HandleTSSMessage(context.Context, *TSSData) (*Ack, error)
 	mustEmbedUnimplementedNodeServer()
 }
 
@@ -103,8 +103,8 @@ func (UnimplementedNodeServer) Update(context.Context, *Version) (*Ack, error) {
 func (UnimplementedNodeServer) StartDKG(context.Context, *Caller) (*Ack, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StartDKG not implemented")
 }
-func (UnimplementedNodeServer) DKGMessage(context.Context, *DKGData) (*Ack, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DKGMessage not implemented")
+func (UnimplementedNodeServer) HandleTSSMessage(context.Context, *TSSData) (*Ack, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method HandleTSSMessage not implemented")
 }
 func (UnimplementedNodeServer) mustEmbedUnimplementedNodeServer() {}
 
@@ -173,20 +173,20 @@ func _Node_StartDKG_Handler(srv interface{}, ctx context.Context, dec func(inter
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Node_DKGMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DKGData)
+func _Node_HandleTSSMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TSSData)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(NodeServer).DKGMessage(ctx, in)
+		return srv.(NodeServer).HandleTSSMessage(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Node_DKGMessage_FullMethodName,
+		FullMethod: Node_HandleTSSMessage_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(NodeServer).DKGMessage(ctx, req.(*DKGData))
+		return srv.(NodeServer).HandleTSSMessage(ctx, req.(*TSSData))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -211,8 +211,8 @@ var Node_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Node_StartDKG_Handler,
 		},
 		{
-			MethodName: "DKGMessage",
-			Handler:    _Node_DKGMessage_Handler,
+			MethodName: "HandleTSSMessage",
+			Handler:    _Node_HandleTSSMessage_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -40,6 +40,12 @@ func makeAndConnectNode(listenAddr string, knownAddresses []string, dkg bool) *n
 				}
 			}
 		}()
+		go func() {
+			time.Sleep(35 * time.Second)
+			n.InitSigning([]byte("Hello World"))
+			time.Sleep(2 * time.Second)
+			n.InitSigning([]byte("Lull"))
+		}()
 	}
 	return n
 }

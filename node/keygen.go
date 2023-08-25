@@ -1,11 +1,8 @@
 package node
 
 import (
-	"context"
-
 	"github.com/bnb-chain/tss-lib/ecdsa/keygen"
 	"github.com/bnb-chain/tss-lib/tss"
-	"github.com/hwnprsd/tss/proto"
 )
 
 func (n *Node) InitKeygen() {
@@ -35,7 +32,7 @@ func (n *Node) SetupKgLocalParty() {
 
 	party := keygen.NewLocalParty(params, outChan, endChan, *n.preParams)
 	n.kgParty = &party
-	n.logger.Info("Local party setup done")
+	n.logger.Info("KG Local party setup done")
 
 	go func() {
 		for {
@@ -52,11 +49,16 @@ func (n *Node) SetupKgLocalParty() {
 	}()
 }
 
+func (n *Node) handleKeygenEnd(data keygen.LocalPartySaveData) {
+	n.kgData = &data
+	n.logger.Info("Keygen complete")
+}
+
 func (n *Node) handleKeygenMessage(message tss.Message, errChan chan<- error) {
 	n.peerLock.RLock()
 	// No need to wait for go funcs to complete, as we are only reading the peers
 	defer n.peerLock.RUnlock()
-	n.logger.Sugar().Infof("Received a message from outChan: %+v", message)
+	n.logger.Sugar().Infof("[KEYGEN] Received a message from outChan: %+v", message)
 	dest := message.GetTo()
 
 	if dest == nil {
@@ -65,27 +67,9 @@ func (n *Node) handleKeygenMessage(message tss.Message, errChan chan<- error) {
 			if peer.version.ListenAddr == n.listenAddress {
 				continue
 			}
-			go n.updatePeer(message, &peer.nodeClient, errChan)
+			go n.updateTSSPeer(TSS_KEYGEN, message, &peer.nodeClient, errChan)
 		}
 	} else {
-		go n.updatePeer(message, &n.peers[dest[0].Moniker].nodeClient, errChan)
-	}
-}
-
-func (n *Node) handleKeygenEnd(data keygen.LocalPartySaveData) {
-	n.kgData = &data
-	n.logger.Info("Keygen complete")
-}
-
-func (n *Node) updatePeer(message tss.Message, node *proto.NodeClient, errChan chan<- error) {
-	data, _, _ := message.WireBytes()
-	msg := &proto.DKGData{
-		WireMessage: data,
-		PartyId:     n.partyId,
-		IsBroadcast: message.IsBroadcast(),
-	}
-	_, err := (*node).DKGMessage(context.Background(), msg)
-	if err != nil {
-		errChan <- err
+		go n.updateTSSPeer(TSS_KEYGEN, message, &n.peers[dest[0].Moniker].nodeClient, errChan)
 	}
 }

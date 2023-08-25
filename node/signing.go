@@ -9,7 +9,7 @@ import (
 	"github.com/bnb-chain/tss-lib/tss"
 )
 
-func (n *Node) InitSigning(message string) {
+func (n *Node) InitSigning(message []byte) {
 	if err := n.SetupSigLocalParty(message); err != nil {
 		n.logger.Sugar().Fatal(err)
 	}
@@ -22,14 +22,13 @@ func (n *Node) InitSigning(message string) {
 	}()
 }
 
-func (n *Node) SetupSigLocalParty(message string) error {
+func (n *Node) SetupSigLocalParty(message []byte) error {
 	if n.kgData == nil {
 		return errors.New("Complete keygen first")
 	}
 
 	n.logger.Info("Setting up Sig local party...")
-	bytes := []byte(message)
-	msg := new(big.Int).SetBytes(bytes)
+	msg := new(big.Int).SetBytes(message)
 
 	parties := n.GetPartiesSorted()
 	peerCtx := tss.NewPeerContext(parties)
@@ -39,15 +38,17 @@ func (n *Node) SetupSigLocalParty(message string) error {
 	outChan := make(chan tss.Message)
 	errChan := make(chan error)
 
-	signing.NewLocalParty(msg, params, *n.kgData, outChan, endChan)
+	party := signing.NewLocalParty(msg, params, *n.kgData, outChan, endChan)
+	n.sigParty = &party
+	n.logger.Info("Sig Local party setup done")
 
 	go func() {
 		for {
 			select {
 			case outMsg := <-outChan:
-				n.handleSigningMessage(outMsg, errChan)
+				n.handleSigningMessage(outMsg, errChan, message)
 			case endData := <-endChan:
-				n.handleSigningEnd(endData)
+				n.handleSigningEnd(&endData)
 				// TODO: Break the loop?
 			case err := <-errChan:
 				n.logger.Sugar().Fatal(err)
@@ -58,7 +59,28 @@ func (n *Node) SetupSigLocalParty(message string) error {
 	return nil
 }
 
-func (n *Node) handleSigningEnd(data common.SignatureData) {
+func (n *Node) handleSigningEnd(data *common.SignatureData) {
+	n.logger.Info("Sig complete")
+	n.logger.Info(data.String())
 }
 
-func (n *Node) handleSigningMessage(message tss.Message, errChan chan<- error) {}
+func (n *Node) handleSigningMessage(message tss.Message, errChan chan<- error, msgToSign []byte) {
+	n.peerLock.RLock()
+	// No need to wait for go funcs to complete, as we are only reading the peers
+	defer n.peerLock.RUnlock()
+	n.logger.Sugar().Infof("[SIGNING] Received a message from outChan: %+v", message)
+	dest := message.GetTo()
+
+	if dest == nil {
+		// Broadcast
+		for _, peer := range n.peers {
+			if peer.version.ListenAddr == n.listenAddress {
+				continue
+			}
+			go n.updateTSSPeer(TSS_SIGNATURE, message, &peer.nodeClient, errChan, withSigMessage(msgToSign))
+		}
+	} else {
+		go n.updateTSSPeer(TSS_SIGNATURE, message, &n.peers[dest[0].Moniker].nodeClient, errChan, withSigMessage(msgToSign))
+	}
+
+}

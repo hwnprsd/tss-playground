@@ -10,6 +10,11 @@ import (
 	"github.com/hwnprsd/tss/proto"
 )
 
+const (
+	TSS_KEYGEN    = 1
+	TSS_SIGNATURE = 2
+)
+
 func (n *Node) SetupForTss() {
 	// TODO: Maybe read the private key from a config file
 	// Instead of creating a new one every time

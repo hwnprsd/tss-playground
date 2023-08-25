@@ -6,7 +6,7 @@ service Node {
 	rpc Handshake(Version) returns (Version);
 	rpc Update(Version) returns (Ack);
 	rpc StartDKG(Caller) returns (Ack);
-	rpc DKGMessage(DKGData) returns (Ack);
+	rpc HandleTSSMessage(TSSData) returns (Ack);
 }
 
 message Ack {}
@@ -21,12 +21,13 @@ message PartyId {
 }
 
 
-message DKGData {
+message TSSData {
 	bytes wireMessage = 1;
 	PartyId partyId = 2;
 	int32 messageId = 3;
-	string type = 4;
+	int32 type = 4;
 	bool isBroadcast = 5;
+	bytes sigMessage = 6;
 }
 
 message Version {
