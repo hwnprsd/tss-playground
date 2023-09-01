@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/bnb-chain/tss-lib/tss"
 	"github.com/hwnprsd/tss/proto"
 )
 
@@ -95,8 +94,17 @@ func withSigMessage(message []byte) func(*TSSMessageOpt) {
 	}
 }
 
-func (n *Node) updateTSSPeer(messageType int, message tss.Message, node *proto.NodeClient, errChan chan<- error, opts ...TSSMessageOptFunc) {
-	data, _, _ := message.WireBytes()
+type WireMessage interface {
+	Bytes() ([]byte, error)
+	IsBroadcast() bool
+}
+
+func (n *Node) messagePeer(messageType int, message WireMessage, node *proto.NodeClient, errChan chan<- error, opts ...TSSMessageOptFunc) {
+	data, err := message.Bytes()
+	if err != nil {
+		errChan <- err
+		n.logger.Sugar().Fatal(err)
+	}
 	opt := TSSMessageOpt{}
 	for _, o := range opts {
 		o(&opt)
@@ -108,7 +116,7 @@ func (n *Node) updateTSSPeer(messageType int, message tss.Message, node *proto.N
 		Type:        int32(messageType),
 		SigMessage:  opt.SigMessage,
 	}
-	_, err := (*node).HandleTSSMessage(context.Background(), msg)
+	_, err = (*node).HandleTSSMessage(context.Background(), msg)
 	if err != nil {
 		errChan <- err
 	}

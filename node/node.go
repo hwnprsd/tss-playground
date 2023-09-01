@@ -39,17 +39,15 @@ type Node struct {
 	privateKey crypto.PrivateKey
 	partyId    *proto.PartyId
 
-	kgParty *tss.Party
-	kgData  *keygen.LocalPartySaveData
-
+	kgParty  *tss.Party
+	kgData   *keygen.LocalPartySaveData
 	sigParty *tss.Party
-
 	// TODO: Redundant, but pid stores sorted index
-	pid *tss.PartyID
+	pid       *tss.PartyID
+	preParams *keygen.LocalPreParams
 
 	// TSS PreParams takes time to generate
 	// Not sure if this is needed in the nodes's state
-	preParams     *keygen.LocalPreParams
 	isParamsReady bool
 }
 

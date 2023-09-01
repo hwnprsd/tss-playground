@@ -5,6 +5,7 @@ import (
 	"github.com/bnb-chain/tss-lib/tss"
 )
 
+// Handle multiple signs
 func (n *Node) InitKeygen() {
 	// Overwrite the localParty and create a new one
 	// TODO: Handle different cohorts of local parties?
@@ -54,6 +55,7 @@ func (n *Node) handleKeygenEnd(data keygen.LocalPartySaveData) {
 	n.logger.Info("Keygen complete")
 }
 
+// Messages coming in from the TSS-Lib channels
 func (n *Node) handleKeygenMessage(message tss.Message, errChan chan<- error) {
 	n.peerLock.RLock()
 	// No need to wait for go funcs to complete, as we are only reading the peers
@@ -67,9 +69,9 @@ func (n *Node) handleKeygenMessage(message tss.Message, errChan chan<- error) {
 			if peer.version.ListenAddr == n.listenAddress {
 				continue
 			}
-			go n.updateTSSPeer(TSS_KEYGEN, message, &peer.nodeClient, errChan)
+			go n.messagePeer(TSS_KEYGEN, ToWireMessage(message), &peer.nodeClient, errChan)
 		}
 	} else {
-		go n.updateTSSPeer(TSS_KEYGEN, message, &n.peers[dest[0].Moniker].nodeClient, errChan)
+		go n.messagePeer(TSS_KEYGEN, ToWireMessage(message), &n.peers[dest[0].Moniker].nodeClient, errChan)
 	}
 }

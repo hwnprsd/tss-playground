@@ -32,3 +32,16 @@ func ToPartyId(party *proto.PartyId) *tss.PartyID {
 		new(big.Int).SetBytes(party.Key),
 	)
 }
+
+type wireMessageData struct {
+	tss.Message
+}
+
+func (w wireMessageData) Bytes() ([]byte, error) {
+	b, _, e := w.WireBytes()
+	return b, e
+}
+
+func ToWireMessage(message tss.Message) WireMessage {
+	return wireMessageData{message}
+}

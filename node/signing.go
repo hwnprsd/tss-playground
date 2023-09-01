@@ -89,10 +89,10 @@ func (n *Node) handleSigningMessage(message tss.Message, errChan chan<- error, m
 			if peer.version.ListenAddr == n.listenAddress {
 				continue
 			}
-			go n.updateTSSPeer(TSS_SIGNATURE, message, &peer.nodeClient, errChan, withSigMessage(msgToSign))
+			go n.messagePeer(TSS_SIGNATURE, ToWireMessage(message), &peer.nodeClient, errChan, withSigMessage(msgToSign))
 		}
 	} else {
-		go n.updateTSSPeer(TSS_SIGNATURE, message, &n.peers[dest[0].Moniker].nodeClient, errChan, withSigMessage(msgToSign))
+		go n.messagePeer(TSS_SIGNATURE, ToWireMessage(message), &n.peers[dest[0].Moniker].nodeClient, errChan, withSigMessage(msgToSign))
 	}
 
 }
