@@ -1,17 +1,34 @@
 syntax = "proto3";
 
+import "google/api/annotations.proto";
+
 option go_package = "./proto";
 
 service Node {
 	rpc Handshake(Version) returns (Version);
 	rpc Update(Version) returns (Ack);
-	rpc StartDKG(Caller) returns (Ack);
+	rpc StartDKG(Caller) returns (Ack) {
+		option (google.api.http) = {
+			get: "/dkg"
+		};
+	}
+	rpc StartSigning(SignCaller) returns (Ack) {
+		option (google.api.http) = {
+			post: "/sign"
+			body: "*"
+		};
+	}
 	rpc HandleTSSMessage(TSSData) returns (Ack);
 }
 
 message Ack {}
 
 message Caller {} 
+
+message SignCaller {
+	// This will map to base64
+	bytes data = 1;
+}
 
 message PartyId {
 	string id = 1;
@@ -37,6 +54,3 @@ message Version {
 	bool isInitialized = 4;
 	PartyId partyId = 5;
 }
-
-
-

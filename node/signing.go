@@ -1,6 +1,9 @@
 package node
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"encoding/hex"
 	"errors"
 	"math/big"
 
@@ -48,7 +51,7 @@ func (n *Node) SetupSigLocalParty(message []byte) error {
 			case outMsg := <-outChan:
 				n.handleSigningMessage(outMsg, errChan, message)
 			case endData := <-endChan:
-				n.handleSigningEnd(&endData)
+				n.handleSigningEnd(&endData, message)
 				// TODO: Break the loop?
 			case err := <-errChan:
 				n.logger.Sugar().Fatal(err)
@@ -59,9 +62,18 @@ func (n *Node) SetupSigLocalParty(message []byte) error {
 	return nil
 }
 
-func (n *Node) handleSigningEnd(data *common.SignatureData) {
+func (n *Node) handleSigningEnd(data *common.SignatureData, message []byte) {
 	n.logger.Info("Sig complete")
-	n.logger.Info(data.String())
+	x, y := (*n.kgData).ECDSAPub.X(), (*n.kgData).ECDSAPub.Y()
+	pk := ecdsa.PublicKey{
+		Curve: tss.EC(),
+		X:     x,
+		Y:     y,
+	}
+	ok := ecdsa.VerifyASN1(&pk, message, data.GetSignature())
+	pubKeyBytes := elliptic.Marshal(pk.Curve, pk.X, pk.Y)
+	n.logger.Sugar().Infof("Public Key - %s", hex.EncodeToString(pubKeyBytes))
+	n.logger.Sugar().Infof("Is Verified? - %s", ok)
 }
 
 func (n *Node) handleSigningMessage(message tss.Message, errChan chan<- error, msgToSign []byte) {

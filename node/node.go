@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/http"
 	"sync"
 
 	"github.com/bnb-chain/tss-lib/ecdsa/keygen"
 	"github.com/bnb-chain/tss-lib/tss"
+	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/hwnprsd/tss/crypto"
 	"github.com/hwnprsd/tss/proto"
 	"go.uber.org/zap"
@@ -63,7 +65,21 @@ func NewNode() *Node {
 	}
 }
 
-func (n *Node) Start(listenAddr string, knownAddresses []string) {
+func (n *Node) StartGrpcServer() {
+	mux := runtime.NewServeMux()
+	opts := []grpc.DialOption{grpc.WithInsecure()}
+	err := proto.RegisterNodeHandlerFromEndpoint(context.Background(), mux, n.listenAddress, opts)
+	if err != nil {
+		panic(err)
+	}
+	n.logger.Info(fmt.Sprintf("New mux server started (%s)", ":5050"))
+	err = http.ListenAndServe(":5050", mux)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (n *Node) Start(listenAddr string, knownAddresses []string, startServer bool) {
 	var (
 		opts       = []grpc.ServerOption{}
 		grpcServer = grpc.NewServer(opts...)
@@ -85,6 +101,9 @@ func (n *Node) Start(listenAddr string, knownAddresses []string) {
 		n.ConnectToNodes(knownAddresses)
 	}()
 	n.logger.Info(fmt.Sprintf("New node started (%s)", listenAddr))
+	if startServer {
+		go n.StartGrpcServer()
+	}
 	n.logger.Sugar().Fatal(grpcServer.Serve(ln))
 }
 
@@ -141,6 +160,11 @@ func (n *Node) Handshake(ctx context.Context, version *proto.Version) (*proto.Ve
 	n.addPeer(&c, version)
 
 	return n.Version(), nil
+}
+
+func (n *Node) StartDKG(context.Context, *proto.Caller) (*proto.Ack, error) {
+	n.InitKeygen()
+	return &proto.Ack{}, nil
 }
 
 // FIXME: Big security vuln

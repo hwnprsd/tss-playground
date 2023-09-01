@@ -22,6 +22,7 @@ const (
 	Node_Handshake_FullMethodName        = "/Node/Handshake"
 	Node_Update_FullMethodName           = "/Node/Update"
 	Node_StartDKG_FullMethodName         = "/Node/StartDKG"
+	Node_StartSigning_FullMethodName     = "/Node/StartSigning"
 	Node_HandleTSSMessage_FullMethodName = "/Node/HandleTSSMessage"
 )
 
@@ -32,6 +33,7 @@ type NodeClient interface {
 	Handshake(ctx context.Context, in *Version, opts ...grpc.CallOption) (*Version, error)
 	Update(ctx context.Context, in *Version, opts ...grpc.CallOption) (*Ack, error)
 	StartDKG(ctx context.Context, in *Caller, opts ...grpc.CallOption) (*Ack, error)
+	StartSigning(ctx context.Context, in *SignCaller, opts ...grpc.CallOption) (*Ack, error)
 	HandleTSSMessage(ctx context.Context, in *TSSData, opts ...grpc.CallOption) (*Ack, error)
 }
 
@@ -70,6 +72,15 @@ func (c *nodeClient) StartDKG(ctx context.Context, in *Caller, opts ...grpc.Call
 	return out, nil
 }
 
+func (c *nodeClient) StartSigning(ctx context.Context, in *SignCaller, opts ...grpc.CallOption) (*Ack, error) {
+	out := new(Ack)
+	err := c.cc.Invoke(ctx, Node_StartSigning_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *nodeClient) HandleTSSMessage(ctx context.Context, in *TSSData, opts ...grpc.CallOption) (*Ack, error) {
 	out := new(Ack)
 	err := c.cc.Invoke(ctx, Node_HandleTSSMessage_FullMethodName, in, out, opts...)
@@ -86,6 +97,7 @@ type NodeServer interface {
 	Handshake(context.Context, *Version) (*Version, error)
 	Update(context.Context, *Version) (*Ack, error)
 	StartDKG(context.Context, *Caller) (*Ack, error)
+	StartSigning(context.Context, *SignCaller) (*Ack, error)
 	HandleTSSMessage(context.Context, *TSSData) (*Ack, error)
 	mustEmbedUnimplementedNodeServer()
 }
@@ -102,6 +114,9 @@ func (UnimplementedNodeServer) Update(context.Context, *Version) (*Ack, error) {
 }
 func (UnimplementedNodeServer) StartDKG(context.Context, *Caller) (*Ack, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StartDKG not implemented")
+}
+func (UnimplementedNodeServer) StartSigning(context.Context, *SignCaller) (*Ack, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StartSigning not implemented")
 }
 func (UnimplementedNodeServer) HandleTSSMessage(context.Context, *TSSData) (*Ack, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method HandleTSSMessage not implemented")
@@ -173,6 +188,24 @@ func _Node_StartDKG_Handler(srv interface{}, ctx context.Context, dec func(inter
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Node_StartSigning_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SignCaller)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NodeServer).StartSigning(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Node_StartSigning_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NodeServer).StartSigning(ctx, req.(*SignCaller))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Node_HandleTSSMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(TSSData)
 	if err := dec(in); err != nil {
@@ -209,6 +242,10 @@ var Node_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "StartDKG",
 			Handler:    _Node_StartDKG_Handler,
+		},
+		{
+			MethodName: "StartSigning",
+			Handler:    _Node_StartSigning_Handler,
 		},
 		{
 			MethodName: "HandleTSSMessage",
