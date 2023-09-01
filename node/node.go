@@ -147,37 +147,6 @@ func (n *Node) removePeer(addr string) {
 	delete(n.peers, addr)
 }
 
-func (n *Node) Handshake(ctx context.Context, version *proto.Version) (*proto.Version, error) {
-	c, err := makeNodeClient(version.ListenAddr)
-	if err != nil {
-		return nil, err
-	}
-
-	// FIXME:
-	// There's a potential issue where addPeer gets call on the same peer
-	// And because of mutex locks, it gets set twice
-	// Not a breaking issue, but still an issue
-	n.addPeer(&c, version)
-
-	return n.Version(), nil
-}
-
-func (n *Node) StartDKG(context.Context, *proto.Caller) (*proto.Ack, error) {
-	n.InitKeygen()
-	return &proto.Ack{}, nil
-}
-
-// FIXME: Big security vuln
-func (n *Node) Update(ctx context.Context, version *proto.Version) (*proto.Ack, error) {
-	n.peerLock.Lock()
-	defer n.peerLock.Unlock()
-	// TODO: Check if the client is valid & exists
-	// FIXME: Blind update is a security risk - Have some AUTH
-	n.peers[version.ListenAddr].version = version
-	n.logger.Info(fmt.Sprintf("Updating peer data (%s)", version.PartyId))
-	return &proto.Ack{}, nil
-}
-
 func (n *Node) dialRemoteNode(addr string) (*proto.NodeClient, *proto.Version, error) {
 	c, err := makeNodeClient(addr)
 	if err != nil {

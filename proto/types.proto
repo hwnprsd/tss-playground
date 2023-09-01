@@ -28,6 +28,8 @@ message Caller {}
 message SignCaller {
 	// This will map to base64
 	bytes data = 1;
+	bytes signedData = 2;
+	bytes address = 3;
 }
 
 message PartyId {
