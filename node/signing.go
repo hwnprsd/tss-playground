@@ -1,9 +1,6 @@
 package node
 
 import (
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"encoding/hex"
 	"errors"
 	"math/big"
 
@@ -64,16 +61,18 @@ func (n *Node) SetupSigLocalParty(message []byte) error {
 
 func (n *Node) handleSigningEnd(data *common.SignatureData, message []byte) {
 	n.logger.Info("Sig complete")
-	x, y := (*n.kgData).ECDSAPub.X(), (*n.kgData).ECDSAPub.Y()
-	pk := ecdsa.PublicKey{
-		Curve: tss.EC(),
-		X:     x,
-		Y:     y,
-	}
-	ok := ecdsa.VerifyASN1(&pk, message, data.GetSignature())
-	pubKeyBytes := elliptic.Marshal(pk.Curve, pk.X, pk.Y)
-	n.logger.Sugar().Infof("Public Key - %s", hex.EncodeToString(pubKeyBytes))
-	n.logger.Sugar().Infof("Is Verified? - %s", ok)
+	n.logger.Info(string(data.Signature))
+	n.sigParty = nil
+	// x, y := (*n.kgData).ECDSAPub.X(), (*n.kgData).ECDSAPub.Y()
+	// pk := ecdsa.PublicKey{
+	// 	Curve: tss.EC(),
+	// 	X:     x,
+	// 	Y:     y,
+	// }
+	// ok := ecdsa.VerifyASN1(&pk, message, data.GetSignature())
+	// pubKeyBytes := elliptic.Marshal(pk.Curve, pk.X, pk.Y)
+	// n.logger.Sugar().Infof("Public Key - %s", hex.EncodeToString(pubKeyBytes))
+	// n.logger.Sugar().Infof("Is Verified? - %s", ok)
 }
 
 func (n *Node) handleSigningMessage(message tss.Message, errChan chan<- error, msgToSign []byte) {

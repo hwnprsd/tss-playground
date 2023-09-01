@@ -9,6 +9,7 @@ import (
 func (n *Node) InitKeygen() {
 	// Overwrite the localParty and create a new one
 	// TODO: Handle different cohorts of local parties?
+	// FIXME: Should not overwrite if an ongoing round is happening
 	n.SetupKgLocalParty()
 
 	go func() {
