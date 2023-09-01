@@ -25,6 +25,10 @@ type PeerData struct {
 type Session struct {
 	keyGenParty *tss.Party
 	kgData      *keygen.LocalPartySaveData
+
+	parties map[string]*PeerData
+
+	sigParty *tss.Party
 }
 
 type Node struct {
@@ -40,18 +44,19 @@ type Node struct {
 	listenAddress string
 
 	// Map of smart-wallet data to Session Data
-	sessions map[string]Session
+	sessions map[string]*Session
 
 	// FIXME:
 	// Security Hazard
 	privateKey crypto.PrivateKey
 	partyId    *proto.PartyId
 
-	kgParty  *tss.Party
-	kgData   *keygen.LocalPartySaveData
-	sigParty *tss.Party
+	// kgParty  *tss.Party
+	// kgData   *keygen.LocalPartySaveData
+	// sigParty *tss.Party
 	// TODO: Redundant, but pid stores sorted index
-	pid       *tss.PartyID
+	pid *tss.PartyID
+	// This needs to be generated for each DKG event
 	preParams *keygen.LocalPreParams
 
 	// TSS PreParams takes time to generate
@@ -65,9 +70,10 @@ func NewNode() *Node {
 	devConfig.EncoderConfig.CallerKey = ""
 	logger, _ := devConfig.Build()
 	return &Node{
-		version: "solace-kn-1.0.0",
-		peers:   make(map[string]*PeerData),
-		logger:  logger,
+		version:  "solace-kn-1.0.0",
+		peers:    make(map[string]*PeerData),
+		logger:   logger,
+		sessions: make(map[string]*Session),
 	}
 }
 

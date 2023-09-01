@@ -42,7 +42,6 @@ message PartyId {
 	int32 index = 4;
 }
 
-
 message TSSData {
 	bytes wireMessage = 1;
 	PartyId partyId = 2;

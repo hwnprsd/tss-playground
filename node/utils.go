@@ -1,6 +1,7 @@
 package node
 
 import (
+	"encoding/hex"
 	"fmt"
 	"math/big"
 
@@ -44,4 +45,8 @@ func (w wireMessageData) Bytes() ([]byte, error) {
 
 func ToWireMessage(message tss.Message) WireMessage {
 	return wireMessageData{message}
+}
+
+func AddressFromBytes(b []byte) string {
+	return hex.EncodeToString(b)
 }

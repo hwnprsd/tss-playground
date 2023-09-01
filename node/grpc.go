@@ -54,26 +54,24 @@ func (n *Node) HandleTSSMessage(ctx context.Context, message *proto.TSSData) (*p
 	// Check if the parties matches the incoming message
 
 	fromPartyId := n.GetPartyId(message.PartyId.Id)
+	sAddress := AddressFromBytes(message.Address)
 
 	switch message.Type {
 	case TSS_KEYGEN:
-		if n.kgParty == nil {
-			n.InitKeygen(message.Address)
-		}
-
+		n.InitKeygen(message.Address)
+		session := n.sessions[sAddress]
 		// Send broadcast info over the network as well
-		_, err := (*n.kgParty).UpdateFromBytes(message.WireMessage, fromPartyId, message.IsBroadcast)
+		_, err := (*session.keyGenParty).UpdateFromBytes(message.WireMessage, fromPartyId, message.IsBroadcast)
 		if err != nil {
 			return nil, err
 		}
 		return &proto.Ack{}, nil
 	case TSS_SIGNATURE:
-		if n.sigParty == nil {
-			n.InitSigning(message.Address, message.SigMessage)
-		}
+		n.InitSigning(message.Address, message.SigMessage)
+		session := n.sessions[sAddress]
 
 		// Send broadcast info over the network as well
-		_, err := (*n.sigParty).UpdateFromBytes(message.WireMessage, fromPartyId, message.IsBroadcast)
+		_, err := (*session.sigParty).UpdateFromBytes(message.WireMessage, fromPartyId, message.IsBroadcast)
 		if err != nil {
 			return nil, err
 		}
@@ -101,7 +99,7 @@ type WireMessage interface {
 	IsBroadcast() bool
 }
 
-func (n *Node) messagePeer(messageType int, message WireMessage, node *proto.NodeClient, errChan chan<- error, opts ...TSSMessageOptFunc) {
+func (n *Node) messagePeer(messageType int, message WireMessage, node *proto.NodeClient, sessionAddress []byte, errChan chan<- error, opts ...TSSMessageOptFunc) {
 	data, err := message.Bytes()
 	if err != nil {
 		errChan <- err
@@ -117,6 +115,7 @@ func (n *Node) messagePeer(messageType int, message WireMessage, node *proto.Nod
 		IsBroadcast: message.IsBroadcast(),
 		Type:        int32(messageType),
 		SigMessage:  opt.SigMessage,
+		Address:     sessionAddress,
 	}
 	_, err = (*node).HandleTSSMessage(context.Background(), msg)
 	if err != nil {

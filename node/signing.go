@@ -1,6 +1,7 @@
 package node
 
 import (
+	"encoding/hex"
 	"errors"
 	"math/big"
 
@@ -10,21 +11,38 @@ import (
 )
 
 func (n *Node) InitSigning(address []byte, message []byte) {
-	if err := n.SetupSigLocalParty(message); err != nil {
+	shouldContinue, err := n.SetupSigLocalParty(message, address)
+
+	if err != nil {
 		n.logger.Sugar().Fatal(err)
 	}
 
+	if !shouldContinue {
+		return
+	}
+
+	sAddress := AddressFromBytes(address)
 	go func() {
-		err := (*n.sigParty).Start()
+		err := (*n.sessions[sAddress].sigParty).Start()
 		if err != nil {
 			n.logger.Sugar().Fatal(err)
 		}
 	}()
 }
 
-func (n *Node) SetupSigLocalParty(message []byte) error {
-	if n.kgData == nil {
-		return errors.New("Complete keygen first")
+func (n *Node) SetupSigLocalParty(message []byte, sessionAddress []byte) (bool, error) {
+	sAddress := AddressFromBytes(sessionAddress)
+	session, exists := n.sessions[sAddress]
+	if !exists {
+		return false, errors.New("Session not initiated")
+	}
+	// If the KeyGen Local data is missing
+	if session.kgData == nil {
+		return false, errors.New("Complete keygen first")
+	}
+	// If the signatureParty already exists, don't overwrite
+	if session.sigParty != nil {
+		return false, nil
 	}
 
 	n.logger.Info("Setting up Sig local party...")
@@ -38,17 +56,17 @@ func (n *Node) SetupSigLocalParty(message []byte) error {
 	outChan := make(chan tss.Message)
 	errChan := make(chan error)
 
-	party := signing.NewLocalParty(msg, params, *n.kgData, outChan, endChan)
-	n.sigParty = &party
+	party := signing.NewLocalParty(msg, params, *session.kgData, outChan, endChan)
+	session.sigParty = &party
 	n.logger.Info("Sig Local party setup done")
 
 	go func() {
 		for {
 			select {
 			case outMsg := <-outChan:
-				n.handleSigningMessage(outMsg, errChan, message)
+				n.handleSigningMessage(outMsg, errChan, message, sessionAddress)
 			case endData := <-endChan:
-				n.handleSigningEnd(&endData, message)
+				n.handleSigningEnd(&endData, message, sessionAddress)
 				// TODO: Break the loop?
 			case err := <-errChan:
 				n.logger.Sugar().Fatal(err)
@@ -56,13 +74,15 @@ func (n *Node) SetupSigLocalParty(message []byte) error {
 		}
 	}()
 
-	return nil
+	return true, nil
 }
 
-func (n *Node) handleSigningEnd(data *common.SignatureData, message []byte) {
+func (n *Node) handleSigningEnd(data *common.SignatureData, message []byte, sessionAddress []byte) {
+	sAddress := AddressFromBytes(sessionAddress)
 	n.logger.Info("Sig complete")
-	n.logger.Info(string(data.Signature))
-	n.sigParty = nil
+	n.logger.Info(hex.EncodeToString(data.Signature))
+	session := n.sessions[sAddress]
+	session.sigParty = nil
 	// x, y := (*n.kgData).ECDSAPub.X(), (*n.kgData).ECDSAPub.Y()
 	// pk := ecdsa.PublicKey{
 	// 	Curve: tss.EC(),
@@ -75,7 +95,8 @@ func (n *Node) handleSigningEnd(data *common.SignatureData, message []byte) {
 	// n.logger.Sugar().Infof("Is Verified? - %s", ok)
 }
 
-func (n *Node) handleSigningMessage(message tss.Message, errChan chan<- error, msgToSign []byte) {
+// TODO: Add session address
+func (n *Node) handleSigningMessage(message tss.Message, errChan chan<- error, msgToSign []byte, sessionAddress []byte) {
 	n.peerLock.RLock()
 	// No need to wait for go funcs to complete, as we are only reading the peers
 	defer n.peerLock.RUnlock()
@@ -88,10 +109,10 @@ func (n *Node) handleSigningMessage(message tss.Message, errChan chan<- error, m
 			if peer.version.ListenAddr == n.listenAddress {
 				continue
 			}
-			go n.messagePeer(TSS_SIGNATURE, ToWireMessage(message), &peer.nodeClient, errChan, withSigMessage(msgToSign))
+			go n.messagePeer(TSS_SIGNATURE, ToWireMessage(message), &peer.nodeClient, sessionAddress, errChan, withSigMessage(msgToSign))
 		}
 	} else {
-		go n.messagePeer(TSS_SIGNATURE, ToWireMessage(message), &n.peers[dest[0].Moniker].nodeClient, errChan, withSigMessage(msgToSign))
+		go n.messagePeer(TSS_SIGNATURE, ToWireMessage(message), &n.peers[dest[0].Moniker].nodeClient, sessionAddress, errChan, withSigMessage(msgToSign))
 	}
 
 }
