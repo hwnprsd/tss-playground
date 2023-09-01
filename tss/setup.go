@@ -1,4 +1,0 @@
-package tss
-
-func Setup() {
-}
