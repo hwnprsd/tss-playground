@@ -9,7 +9,7 @@ import (
 	"github.com/bnb-chain/tss-lib/tss"
 )
 
-func (n *Node) InitSigning(message []byte) {
+func (n *Node) InitSigning(address []byte, message []byte) {
 	if err := n.SetupSigLocalParty(message); err != nil {
 		n.logger.Sugar().Fatal(err)
 	}

@@ -9,7 +9,8 @@ service Node {
 	rpc Update(Version) returns (Ack);
 	rpc StartDKG(Caller) returns (Ack) {
 		option (google.api.http) = {
-			get: "/dkg"
+			post: "/dkg"
+			body: "*"
 		};
 	}
 	rpc StartSigning(SignCaller) returns (Ack) {
@@ -23,13 +24,15 @@ service Node {
 
 message Ack {}
 
-message Caller {} 
+message Caller {
+	bytes address = 1;
+} 
 
 message SignCaller {
 	// This will map to base64
 	bytes data = 1;
 	bytes signedData = 2;
-	bytes address = 3;
+	bytes address = 3; // Smart-Wallet Address
 }
 
 message PartyId {
@@ -47,6 +50,7 @@ message TSSData {
 	int32 type = 4;
 	bool isBroadcast = 5;
 	bytes sigMessage = 6;
+	bytes address = 7; // Smart-Wallet Address
 }
 
 message Version {

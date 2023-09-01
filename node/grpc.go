@@ -8,6 +8,8 @@ import (
 	"github.com/hwnprsd/tss/proto"
 )
 
+// Handlers for all the GRPC Methods Supported
+
 func (n *Node) Handshake(ctx context.Context, version *proto.Version) (*proto.Version, error) {
 	c, err := makeNodeClient(version.ListenAddr)
 	if err != nil {
@@ -34,13 +36,13 @@ func (n *Node) Update(ctx context.Context, version *proto.Version) (*proto.Ack, 
 	return &proto.Ack{}, nil
 }
 
-func (n *Node) StartDKG(context.Context, *proto.Caller) (*proto.Ack, error) {
-	n.InitKeygen()
+func (n *Node) StartDKG(ctx context.Context, caller *proto.Caller) (*proto.Ack, error) {
+	n.InitKeygen(caller.Address)
 	return &proto.Ack{}, nil
 }
 
 func (n *Node) StartSigning(ctx context.Context, data *proto.SignCaller) (*proto.Ack, error) {
-	n.InitSigning(data.Data)
+	n.InitSigning(data.Address, data.Data)
 	return &proto.Ack{}, nil
 }
 
@@ -56,7 +58,7 @@ func (n *Node) HandleTSSMessage(ctx context.Context, message *proto.TSSData) (*p
 	switch message.Type {
 	case TSS_KEYGEN:
 		if n.kgParty == nil {
-			n.InitKeygen()
+			n.InitKeygen(message.Address)
 		}
 
 		// Send broadcast info over the network as well
@@ -67,7 +69,7 @@ func (n *Node) HandleTSSMessage(ctx context.Context, message *proto.TSSData) (*p
 		return &proto.Ack{}, nil
 	case TSS_SIGNATURE:
 		if n.sigParty == nil {
-			n.InitSigning(message.SigMessage)
+			n.InitSigning(message.Address, message.SigMessage)
 		}
 
 		// Send broadcast info over the network as well

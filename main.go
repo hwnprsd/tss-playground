@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
-	"time"
 
 	"github.com/hwnprsd/tss/node"
 	"github.com/spf13/cobra"
@@ -56,17 +54,17 @@ func makeAndConnectNode(listenAddr string, knownAddresses []string, dkg bool) *n
 	if false {
 		go func() {
 			for {
-				time.Sleep(time.Second * 5)
-				if n.PeerCount() == 2 {
-					log.Println("\n\nCalling DKG")
-					n.InitKeygen()
-					break
-				}
+				// time.Sleep(time.Second * 5)
+				// if n.PeerCount() == 2 {
+				// 	log.Println("\n\nCalling DKG")
+				// 	n.InitKeygen()
+				// 	break
+				// }
 			}
 		}()
 		go func() {
-			time.Sleep(35 * time.Second)
-			n.InitSigning([]byte("Hello Lulli"))
+			// time.Sleep(35 * time.Second)
+			// n.InitSigning([]byte("MSG"))
 		}()
 	}
 	return n

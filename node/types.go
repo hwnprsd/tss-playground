@@ -22,6 +22,11 @@ type PeerData struct {
 	nodeClient proto.NodeClient
 }
 
+type Session struct {
+	keyGenParty *tss.Party
+	kgData      *keygen.LocalPartySaveData
+}
+
 type Node struct {
 	proto.UnimplementedNodeServer
 
@@ -33,6 +38,9 @@ type Node struct {
 
 	version       string
 	listenAddress string
+
+	// Map of smart-wallet data to Session Data
+	sessions map[string]Session
 
 	// FIXME:
 	// Security Hazard

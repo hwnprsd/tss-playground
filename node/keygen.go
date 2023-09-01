@@ -6,7 +6,7 @@ import (
 )
 
 // Handle multiple signs
-func (n *Node) InitKeygen() {
+func (n *Node) InitKeygen(address []byte) {
 	// Overwrite the localParty and create a new one
 	// TODO: Handle different cohorts of local parties?
 	// FIXME: Should not overwrite if an ongoing round is happening
