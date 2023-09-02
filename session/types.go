@@ -43,6 +43,7 @@ func (s *Session) GetPartiesSorted() (parties []*tss.PartyID) {
 		parties = append(parties, common.ToPartyId(p.GetVersion().PartyId))
 	}
 	parties = append(parties, s.partyId)
+
 	parties = tss.SortPartyIDs(parties)
 	return
 }
@@ -57,8 +58,10 @@ func (s *Session) GetPartyId(id string) *tss.PartyID {
 	return nil
 }
 
-func (s *Session) GetParties() {
-
+// TODO: Return a copy instead of the actual reference
+// Can result in bugs if changed by the caller
+func (s *Session) GetParties() PeerMap {
+	return s.peers
 }
 
 type UpdateMessage interface {

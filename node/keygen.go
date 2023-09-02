@@ -47,15 +47,14 @@ func (n *Node) listenKeygenMessages(sessionAddress []byte, outChan *chan tss.Mes
 
 // Messages coming in from the TSS-Lib channels
 func (n *Node) handleKeygenMessage(message tss.Message, errChan chan error, sessionAddress []byte) {
-	n.peerLock.RLock()
-	// No need to wait for go funcs to complete, as we are only reading the peers
-	defer n.peerLock.RUnlock()
 	// n.logger.Sugar().Infof("[KEYGEN] Received a message from outChan: %+v", message)
 	dest := message.GetTo()
 
+	session := n.sessions[AddressFromBytes(sessionAddress)]
+
 	if dest == nil {
 		// Broadcast
-		for _, peer := range n.peers {
+		for _, peer := range session.GetParties() {
 			if peer.GetVersion().ListenAddr == n.listenAddress {
 				continue
 			}
