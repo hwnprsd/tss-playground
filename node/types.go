@@ -13,7 +13,7 @@ import (
 	"github.com/hwnprsd/tss/common"
 	"github.com/hwnprsd/tss/crypto"
 	"github.com/hwnprsd/tss/proto"
-	"github.com/hwnprsd/tss/session"
+	"github.com/hwnprsd/tss/squad"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -32,7 +32,7 @@ type Node struct {
 	listenAddress string
 
 	// Map of smart-wallet data to Session Data
-	sessions map[string]*session.Session
+	sessions map[string]*squad.Squad
 
 	// FIXME:
 	// Security Hazard
@@ -61,7 +61,7 @@ func NewNode() *Node {
 		version:  "solace-kn-1.0.0",
 		peers:    make(map[string]*common.Peer),
 		logger:   logger,
-		sessions: make(map[string]*session.Session),
+		sessions: make(map[string]*squad.Squad),
 	}
 }
 

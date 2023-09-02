@@ -1,4 +1,4 @@
-package session
+package squad
 
 import (
 	"sync"
@@ -11,7 +11,7 @@ import (
 
 type PeerMap map[string]*common.Peer
 
-type Session struct {
+type Squad struct {
 	preParams *keygen.LocalPreParams
 
 	peerLock    sync.RWMutex
@@ -28,15 +28,15 @@ type Session struct {
 	partyId *tss.PartyID
 }
 
-func NewSession(partyId *tss.PartyID, peers PeerMap, preParams *keygen.LocalPreParams) *Session {
-	return &Session{
+func NewSquad(partyId *tss.PartyID, peers PeerMap, preParams *keygen.LocalPreParams) *Squad {
+	return &Squad{
 		peers:     peers,
 		partyId:   partyId,
 		preParams: preParams,
 	}
 }
 
-func (s *Session) GetPartiesSorted() (parties []*tss.PartyID) {
+func (s *Squad) GetPartiesSorted() (parties []*tss.PartyID) {
 	s.peerLock.RLock()
 	defer s.peerLock.RUnlock()
 	for _, p := range s.peers {
@@ -48,7 +48,7 @@ func (s *Session) GetPartiesSorted() (parties []*tss.PartyID) {
 	return
 }
 
-func (s *Session) GetPartyId(id string) *tss.PartyID {
+func (s *Squad) GetPartyId(id string) *tss.PartyID {
 	parties := s.GetPartiesSorted()
 	for _, party := range parties {
 		if party.Id == id {
@@ -60,7 +60,7 @@ func (s *Session) GetPartyId(id string) *tss.PartyID {
 
 // TODO: Return a copy instead of the actual reference
 // Can result in bugs if changed by the caller
-func (s *Session) GetParties() PeerMap {
+func (s *Squad) GetParties() PeerMap {
 	return s.peers
 }
 

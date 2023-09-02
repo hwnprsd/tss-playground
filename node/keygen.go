@@ -2,7 +2,7 @@ package node
 
 import (
 	"github.com/bnb-chain/tss-lib/tss"
-	"github.com/hwnprsd/tss/session"
+	"github.com/hwnprsd/tss/squad"
 )
 
 // Setup the local party & it's listeners
@@ -18,7 +18,7 @@ func (n *Node) InitKeygen(sessionAddress []byte) {
 	}
 	// Create a new session if not exists
 	n.logger.Info("Setting up KG local party...")
-	n.sessions[sAddress] = session.NewSession(
+	n.sessions[sAddress] = squad.NewSquad(
 		n.pid,
 		n.peers,
 		n.preParams,

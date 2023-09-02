@@ -1,4 +1,4 @@
-package session
+package squad
 
 import (
 	"encoding/hex"
@@ -10,7 +10,7 @@ import (
 	"github.com/bnb-chain/tss-lib/tss"
 )
 
-func (s *Session) InitSigning(message []byte) (*chan tss.Message, *chan error) {
+func (s *Squad) InitSigning(message []byte) (*chan tss.Message, *chan error) {
 	shouldContinueInit, outChan, errChan := s.setupSigningParty(message)
 	if !shouldContinueInit {
 		return nil, nil
@@ -25,7 +25,7 @@ func (s *Session) InitSigning(message []byte) (*chan tss.Message, *chan error) {
 	return outChan, errChan
 }
 
-func (s *Session) setupSigningParty(message []byte) (shouldContinueInit bool, outChan *chan tss.Message, errChan *chan error) {
+func (s *Squad) setupSigningParty(message []byte) (shouldContinueInit bool, outChan *chan tss.Message, errChan *chan error) {
 	// KeyGen is not completed
 	if s.keyGenData == nil {
 		log.Println("KeyGen Data is NIL")
@@ -60,12 +60,12 @@ func (s *Session) setupSigningParty(message []byte) (shouldContinueInit bool, ou
 	return true, outChan, errChan
 }
 
-func (s *Session) handleSessionEnd(data *common.SignatureData) {
+func (s *Squad) handleSessionEnd(data *common.SignatureData) {
 	log.Println(hex.EncodeToString(data.Signature))
 	s.sigParty = nil
 }
 
-func (s *Session) UpdateSigningParty(message UpdateMessage) (*chan tss.Message, *chan error, error) {
+func (s *Squad) UpdateSigningParty(message UpdateMessage) (*chan tss.Message, *chan error, error) {
 	outChan, errChan := s.InitSigning(message.GetSigMessage())
 	fromPartyId := s.GetPartyId(message.GetPartyId().Id)
 	_, err := (*s.sigParty).UpdateFromBytes(message.GetWireMessage(), fromPartyId, message.GetIsBroadcast())

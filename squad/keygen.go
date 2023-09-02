@@ -1,4 +1,4 @@
-package session
+package squad
 
 import (
 	"log"
@@ -7,7 +7,7 @@ import (
 	"github.com/bnb-chain/tss-lib/tss"
 )
 
-func (s *Session) InitKeygen() (*chan tss.Message, *chan error) {
+func (s *Squad) InitKeygen() (*chan tss.Message, *chan error) {
 	shouldContinueInit, outChan, errChan := s.setupKeygenParty()
 	if !shouldContinueInit {
 		return nil, nil
@@ -22,7 +22,7 @@ func (s *Session) InitKeygen() (*chan tss.Message, *chan error) {
 }
 
 // Should continue init
-func (s *Session) setupKeygenParty() (shouldContinueInit bool, outChan *chan tss.Message, errChan *chan error) {
+func (s *Squad) setupKeygenParty() (shouldContinueInit bool, outChan *chan tss.Message, errChan *chan error) {
 	// Keygen Party exists for this session
 	if s.keyGenParty != nil {
 		return false, nil, nil
@@ -51,7 +51,7 @@ func (s *Session) setupKeygenParty() (shouldContinueInit bool, outChan *chan tss
 	return true, outChan, errChan
 }
 
-func (s *Session) handleKeygenEnd(data keygen.LocalPartySaveData) {
+func (s *Squad) handleKeygenEnd(data keygen.LocalPartySaveData) {
 	s.keyGenData = &data
 	log.Println("Keygen Complete")
 	// x, y := data.ECDSAPub.X(), data.ECDSAPub.Y()
@@ -65,7 +65,7 @@ func (s *Session) handleKeygenEnd(data keygen.LocalPartySaveData) {
 	// n.logger.Sugar().Infof("Public Key - %s", hex.EncodeToString(pubKeyBytes))
 }
 
-func (s *Session) UpdateKeygenParty(
+func (s *Squad) UpdateKeygenParty(
 	message UpdateMessage,
 ) (*chan tss.Message, *chan error, error) {
 	outChan, errChan := s.InitKeygen()
@@ -77,7 +77,7 @@ func (s *Session) UpdateKeygenParty(
 	return outChan, errChan, nil
 }
 
-func (n *Session) setupChannels() (*chan tss.Message, *chan error) {
+func (n *Squad) setupChannels() (*chan tss.Message, *chan error) {
 	outChan := make(chan tss.Message)
 	errChan := make(chan error)
 	return &outChan, &errChan
