@@ -10,26 +10,14 @@ import (
 	"github.com/bnb-chain/tss-lib/ecdsa/keygen"
 	"github.com/bnb-chain/tss-lib/tss"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/hwnprsd/tss/common"
 	"github.com/hwnprsd/tss/crypto"
 	"github.com/hwnprsd/tss/proto"
+	"github.com/hwnprsd/tss/session"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
-
-type PeerData struct {
-	version    *proto.Version
-	nodeClient proto.NodeClient
-}
-
-type Session struct {
-	keyGenParty *tss.Party
-	kgData      *keygen.LocalPartySaveData
-
-	parties map[string]*PeerData
-
-	sigParty *tss.Party
-}
 
 type Node struct {
 	proto.UnimplementedNodeServer
@@ -38,13 +26,13 @@ type Node struct {
 
 	peerLock    sync.RWMutex
 	messageLock sync.RWMutex
-	peers       map[string]*PeerData
+	peers       map[string]*common.Peer
 
 	version       string
 	listenAddress string
 
 	// Map of smart-wallet data to Session Data
-	sessions map[string]*Session
+	sessions map[string]*session.Session
 
 	// FIXME:
 	// Security Hazard
@@ -71,9 +59,9 @@ func NewNode() *Node {
 	logger, _ := devConfig.Build()
 	return &Node{
 		version:  "solace-kn-1.0.0",
-		peers:    make(map[string]*PeerData),
+		peers:    make(map[string]*common.Peer),
 		logger:   logger,
-		sessions: make(map[string]*Session),
+		sessions: make(map[string]*session.Session),
 	}
 }
 
@@ -124,7 +112,8 @@ func (n *Node) ConnectToNodes(addrs []string) {
 	for _, addr := range addrs {
 		// If the address is ourselves / address is already connected to
 		// continue
-		if addr == n.listenAddress || n.peers[addr] != nil {
+		_, exists := n.peers[addr]
+		if addr == n.listenAddress || exists {
 			continue
 		}
 
@@ -144,11 +133,12 @@ func (n *Node) addPeer(c *proto.NodeClient, version *proto.Version) {
 	if len(version.PeerList) > 0 {
 		go n.ConnectToNodes(version.PeerList)
 	}
-
-	n.peers[version.ListenAddr] = &PeerData{
-		version:    version,
-		nodeClient: *c,
+	_, exists := n.peers[version.ListenAddr]
+	if exists {
+		return
 	}
+
+	n.peers[version.ListenAddr] = common.NewPeer(version, c)
 	n.logger.Info(fmt.Sprintf("CONNECTED (%s)", version.ListenAddr))
 	// n.logger.Info(fmt.Sprintf("Total Nodes Connected = %d", len(n.peers)))
 }
@@ -181,7 +171,7 @@ func (n *Node) peerList() []string {
 
 	peers := []string{}
 	for _, peerData := range n.peers {
-		peers = append(peers, peerData.version.ListenAddr)
+		peers = append(peers, peerData.GetVersion().ListenAddr)
 	}
 	return peers
 }

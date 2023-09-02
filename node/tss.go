@@ -6,6 +6,7 @@ import (
 
 	"github.com/bnb-chain/tss-lib/ecdsa/keygen"
 	"github.com/bnb-chain/tss-lib/tss"
+	"github.com/hwnprsd/tss/common"
 	"github.com/hwnprsd/tss/crypto"
 	"github.com/hwnprsd/tss/proto"
 )
@@ -27,7 +28,7 @@ func (n *Node) SetupForTss() {
 		Id:      hex.EncodeToString(uniqueKey.Bytes()),
 		Key:     uniqueKey.Bytes(),
 	}
-	n.pid = ToPartyId(n.partyId)
+	n.pid = common.ToPartyId(n.partyId)
 	// TODO: Maybe remove this?
 	n.isParamsReady = true
 	n.privateKey = privKey
@@ -42,7 +43,7 @@ func (n *Node) GetPartiesSorted() (parties []*tss.PartyID) {
 	n.peerLock.RLock()
 	defer n.peerLock.RUnlock()
 	for _, p := range n.peers {
-		parties = append(parties, ToPartyId(p.version.PartyId))
+		parties = append(parties, common.ToPartyId(p.GetVersion().PartyId))
 	}
 	parties = append(parties, n.pid)
 	parties = tss.SortPartyIDs(parties)

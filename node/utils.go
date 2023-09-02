@@ -3,10 +3,8 @@ package node
 import (
 	"encoding/hex"
 	"fmt"
-	"math/big"
 
 	"github.com/bnb-chain/tss-lib/tss"
-	"github.com/hwnprsd/tss/proto"
 )
 
 func (n *Node) LogPeers() {
@@ -23,15 +21,6 @@ func (n *Node) PeerCount() int {
 
 func (n *Node) LogVersion() {
 	n.logger.Sugar().Debug(n.Version())
-}
-
-// Each time I call this, i need to sort the peers, or the index will be -1
-func ToPartyId(party *proto.PartyId) *tss.PartyID {
-	return tss.NewPartyID(
-		party.Id,
-		party.Moniker,
-		new(big.Int).SetBytes(party.Key),
-	)
 }
 
 type wireMessageData struct {

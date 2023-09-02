@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/hwnprsd/tss/proto"
 )
@@ -31,7 +32,9 @@ func (n *Node) Update(ctx context.Context, version *proto.Version) (*proto.Ack, 
 	defer n.peerLock.Unlock()
 	// TODO: Check if the client is valid & exists
 	// FIXME: Blind update is a security risk - Have some AUTH
-	n.peers[version.ListenAddr].version = version
+
+	// TODO: Handle setting target version
+	n.peers[version.ListenAddr].SetVersion(version)
 	n.logger.Info(fmt.Sprintf("Updating peer data (%s)", version.PartyId))
 	return &proto.Ack{}, nil
 }
@@ -48,32 +51,47 @@ func (n *Node) StartSigning(ctx context.Context, data *proto.SignCaller) (*proto
 
 // GRPC Handler
 func (n *Node) HandleTSSMessage(ctx context.Context, message *proto.TSSData) (*proto.Ack, error) {
+	time.Sleep(500 * time.Millisecond)
 	n.messageLock.Lock()
 	defer n.messageLock.Unlock()
 	// TODO: What to do if the localparty is outdated?
 	// Check if the parties matches the incoming message
 
-	fromPartyId := n.GetPartyId(message.PartyId.Id)
+	// TODO: Setup the session if it doesn't exist
+
+	// fromPartyId := n.GetPartyId(message.PartyId.Id)
 	sAddress := AddressFromBytes(message.Address)
 
 	switch message.Type {
 	case TSS_KEYGEN:
 		n.InitKeygen(message.Address)
 		session := n.sessions[sAddress]
+		outChan, errChan, err := session.UpdateKeygenParty(message)
 		// Send broadcast info over the network as well
-		_, err := (*session.keyGenParty).UpdateFromBytes(message.WireMessage, fromPartyId, message.IsBroadcast)
 		if err != nil {
 			return nil, err
 		}
+		// First time init
+		if outChan != nil {
+			go n.listenKeygenMessages(message.Address, outChan, errChan)
+		}
 		return &proto.Ack{}, nil
 	case TSS_SIGNATURE:
-		n.InitSigning(message.Address, message.SigMessage)
+		_, err := n.InitSigning(message.Address, message.SigMessage)
+		if err != nil {
+			n.logger.Sugar().Fatal(err)
+		}
+
 		session := n.sessions[sAddress]
 
 		// Send broadcast info over the network as well
-		_, err := (*session.sigParty).UpdateFromBytes(message.WireMessage, fromPartyId, message.IsBroadcast)
+		outChan, errChan, err := (*session).UpdateSigningParty(message)
 		if err != nil {
 			return nil, err
+		}
+		// First time init
+		if outChan != nil {
+			go n.listenSigningMessages(message.SigMessage, message.Address, outChan, errChan)
 		}
 		return &proto.Ack{}, nil
 	default:
